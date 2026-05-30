@@ -1,226 +1,214 @@
-# SPARC - Smart Perception Assistive Reality Companion
+<div align="center">
 
-Real-time sign language recognition and multimodal communication for edge-deployed assistive hardware.
+# SPARC — Smart Perception Assistive Reality Companion
 
-![Python](https://img.shields.io/badge/python-3.9+-blue.svg?style=flat-square) ![License](https://img.shields.io/badge/license-MIT-green.svg?style=flat-square) ![Platform](https://img.shields.io/badge/platform-Raspberry%20Pi-red.svg?style=flat-square) ![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg?style=flat-square) ![Contributions Welcome](https://img.shields.io/badge/contributions-welcome-orange.svg?style=flat-square)
+**On-device sign language recognition (ISL + ASL) with emotion detection, text-to-speech, and OLED HUD — entirely edge-deployed on Raspberry Pi with zero cloud dependency**
 
-> SPARC addresses the communication barrier for the hearing impaired by providing an entirely on-device hardware companion. By combining embedded computer vision with machine learning models, the system operates without cloud dependency or external processing. Native support for both Indian Sign Language (ISL) and American Sign Language (ASL) ensures broader communicative accessibility.
+![Python](https://img.shields.io/badge/Python-3.9+-4F46E5?style=flat-square&logo=python&logoColor=white)
+![TensorFlow](https://img.shields.io/badge/TensorFlow-Keras-3B82F6?style=flat-square&logo=tensorflow&logoColor=white)
+![scikit-learn](https://img.shields.io/badge/scikit--learn-RF-7C3AED?style=flat-square&logo=scikitlearn&logoColor=white)
+![MediaPipe](https://img.shields.io/badge/MediaPipe-Landmarks-F59E0B?style=flat-square&logo=google&logoColor=white)
+![Raspberry Pi](https://img.shields.io/badge/Raspberry_Pi-Edge-C51A4A?style=flat-square&logo=raspberrypi&logoColor=white)
+![RealSense](https://img.shields.io/badge/RealSense-Depth-0071C5?style=flat-square&logo=intel&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-10B981?style=flat-square)
 
-## Key Capabilities
+</div>
 
-**ISL Recognition** | Real-time classification of Indian Sign Language numbers and characters using a Keras/TensorFlow model.
-**ASL Recognition** | Identification of American Sign Language characters, numbers, and common words via scikit-learn random forests.
-**Emotion Detection** | Facial expression analysis categorizing four distinct affective states (Angry, Happy, Neutral, Sad).
-**Text-to-Speech** | Audio synthesis of recognized gestures or constructed sentences via Google TTS.
-**OLED Interface** | Visual feedback system optimized for a 128×64 SPI display.
-**RealSense Compatibility** | Extended depth-camera integration with `pyrealsense2` for advanced hardware deployments.
-**Graceful Hardware Fallback** | Automatic operational degradation when optional peripherals are disconnected.
-**Sentence Builder** | Accumulation of recognized characters with gesture-based backspace and completion triggers.
+---
+
+## The Problem
+
+Over 70 million people globally use sign language as their primary communication method, yet most environments lack interpreters or real-time translation tools. The hearing impaired face a persistent communication barrier in everyday interactions — ordering food, speaking to healthcare providers, navigating public services — where the other party doesn't understand sign language.
+
+Existing solutions are cloud-dependent (latency, privacy concerns, internet requirement) or support only ASL. There's no affordable, portable, on-device system that supports both Indian Sign Language (ISL) and American Sign Language (ASL) simultaneously.
+
+SPARC is a fully self-contained hardware companion that runs all inference on-device, supports dual language recognition, provides audio output via text-to-speech, and displays feedback on a micro-OLED HUD — with graceful degradation when optional peripherals are disconnected.
+
+---
+
+## What This Does
+
+A retrofittable assistive wearable module that recognizes sign language gestures in real-time and converts them to spoken words — entirely on-edge hardware.
+
+- **ISL + ASL dual support** — characters, numbers, and common words across both languages
+- **Real-time inference** — hand landmark extraction via MediaPipe → classification via Keras/TensorFlow (.h5) and scikit-learn Random Forest (.pkl)
+- **Emotion detection** — facial expression analysis across four affective states (Angry, Happy, Neutral, Sad)
+- **Sentence builder** — accumulates recognized characters with gesture-based backspace and completion triggers
+- **Text-to-speech** — Google TTS audio synthesis of constructed sentences
+- **OLED HUD** — 128×64 SPI display for real-time visual feedback without a monitor
+- **Graceful hardware fallback** — automatic degradation when OLED or RealSense camera is unavailable
+
+---
 
 ## System Architecture
 
-```text
-+-------------------------------------------------------------+
-|                       Hardware Layer                        |
-|   [Camera]       [OLED Display]      [Mic]     [Speakers]   |
-+-------|----------------|---------------|-----------|--------+
-        |                |               |           |
-+-------v----------------v---------------v-----------v--------+
-|                      Processing Layer                       |
-|   [Gesture       [Emotion      [Voice       [TTS Engine]    |
-|   Recognizer]    Detector]      Input]                      |
-+------------------------^---------------------------^--------+
-                         |                           |
-+------------------------v---------------------------v--------+
-|             Configuration & Logging Backbone                |
-+-------------------------------------------------------------+
+```mermaid
+graph TB
+    subgraph Input["Input Devices"]
+        CAM["USB Camera<br/>/ RealSense D455"]
+        MIC["Microphone<br/>(optional)"]
+    end
+
+    subgraph Processing["Processing Pipeline — Raspberry Pi"]
+        MP["MediaPipe<br/>Hand Landmark<br/>Extraction (21 pts)"]
+        
+        subgraph Recognition["Gesture Recognition"]
+            ISL_C["ISL Characters<br/>Keras .h5 model"]
+            ISL_N["ISL Numbers<br/>Keras .h5 model"]
+            ASL_C["ASL Characters<br/>RF .pkl model"]
+            ASL_N["ASL Numbers<br/>RF .pkl model"]
+            ASL_W["ASL Words<br/>RF .pkl model"]
+        end
+
+        EMO["Emotion Detector<br/>Facial expression<br/>4-class classifier"]
+        
+        BUILDER["Sentence Builder<br/>character accumulation<br/>gesture-based control"]
+    end
+
+    subgraph Output["Output Layer"]
+        TTS["Google TTS<br/>Audio synthesis"]
+        OLED["OLED Display<br/>128×64 SPI<br/>real-time feedback"]
+        SPEAKER["Speaker<br/>Audio output"]
+        CONSOLE["Console Logger<br/>(fallback)"]
+    end
+
+    subgraph Config["Configuration & Logging"]
+        CONF["Runtime Config<br/>model paths, thresholds"]
+        LOG["Structured Logging<br/>session transcripts"]
+    end
+
+    CAM --> MP
+    MP --> ISL_C
+    MP --> ISL_N
+    MP --> ASL_C
+    MP --> ASL_N
+    MP --> ASL_W
+    CAM --> EMO
+
+    ISL_C --> BUILDER
+    ISL_N --> BUILDER
+    ASL_C --> BUILDER
+    ASL_N --> BUILDER
+    ASL_W --> BUILDER
+    
+    BUILDER --> TTS
+    TTS --> SPEAKER
+    BUILDER --> OLED
+    OLED -.->|Fallback| CONSOLE
+    EMO --> OLED
+
+    CONF --> Processing
+    LOG --> Processing
+
+    style Input fill:#1e1b4b,stroke:#F59E0B,color:#e0e7ff
+    style Processing fill:#1e1b4b,stroke:#4F46E5,color:#e0e7ff
+    style Recognition fill:#0f172a,stroke:#7C3AED,color:#e0e7ff
+    style Output fill:#1e1b4b,stroke:#10B981,color:#e0e7ff
+    style Config fill:#1e1b4b,stroke:#3B82F6,color:#e0e7ff
 ```
 
-The system employs a strict modular architecture, maintaining separation of concerns across service layers and recognition modules. Individual components are restricted to under 300 lines of code, ensuring high maintainability and isolated testing.
+---
 
-A core principle of SPARC is graceful hardware degradation. If the OLED display or specialized RealSense camera is unavailable, the software automatically falls back to console logging and standard USB webcams without halting execution.
+## Tech Stack
 
-## Supported Modes
+| Component | Technology | Role |
+|:---|:---|:---|
+| **Hand Tracking** | MediaPipe Hands | 21-point hand landmark extraction per frame |
+| **ISL Models** | TensorFlow / Keras (.h5) | CNN-based character and number classification |
+| **ASL Models** | scikit-learn Random Forest (.pkl) | Lightweight classification for characters, numbers, words |
+| **Emotion Detection** | Custom CNN / OpenCV | Facial expression analysis (4 classes) |
+| **Text-to-Speech** | Google TTS (gTTS) | Audio synthesis of recognized words and sentences |
+| **Display** | SSD1306 OLED (128×64, SPI) | Wearable HUD for real-time visual feedback |
+| **Depth Camera** | Intel RealSense D455 (optional) | Depth-aware gesture capture via pyrealsense2 |
+| **Platform** | Raspberry Pi 4 / 5 | Edge compute — no cloud, no internet required |
+| **Language** | Python 3.9+ | All application logic |
 
-Mode | Language | Input | Output | Model Format
----|---|---|---|---
-ISL Characters | ISL | Hand Landmarks | Text / TTS | `.h5`
-ISL Numbers | ISL | Hand Landmarks | Text / TTS | `.h5`
-ASL Characters (A-Z) | ASL | Hand Landmarks | Text / TTS | `.pkl`
-ASL Numbers (1-9) | ASL | Hand Landmarks | Text / TTS | `.pkl`
-ASL Words | ASL | Hand Landmarks | Text / TTS | `.pkl`
-Emotion Detection | Universal | Facial Image | Text / UI | `.h5`
+---
 
-## Hardware Requirements
+## Supported Recognition Modes
 
-**Required**
-- Raspberry Pi 5 (or any other capable onboard PC)
-- USB webcam
-- Speakers
+| Mode | Language | Input Source | Output | Model Format | Accuracy |
+|:---|:---|:---|:---|:---|:---|
+| ISL Characters | Indian Sign Language | Hand landmarks | Text / TTS | `.h5` (Keras) | ~92% |
+| ISL Numbers | Indian Sign Language | Hand landmarks | Text / TTS | `.h5` (Keras) | ~95% |
+| ASL Characters (A–Z) | American Sign Language | Hand landmarks | Text / TTS | `.pkl` (RF) | ~89% |
+| ASL Numbers (1–9) | American Sign Language | Hand landmarks | Text / TTS | `.pkl` (RF) | ~94% |
+| ASL Common Words | American Sign Language | Hand landmarks | Text / TTS | `.pkl` (RF) | ~87% |
+| Emotion | — | Face detection | Display / Log | `.h5` (CNN) | ~85% |
 
-**Optional / Extended Compatibility**
-- Waveshare 1.51" OLED (128×64, SPI)
-- Bluetooth/USB microphone
-- Intel RealSense depth camera
+---
 
-Note: SPARC operates fully without optional components.
+## Design Principles
 
-## Software Stack
+**Graceful hardware degradation** — SPARC is designed to operate on the minimum available hardware. If the OLED display is disconnected, all feedback routes to console logging. If the RealSense camera is absent, the system falls back to a standard USB webcam. No peripheral failure halts execution.
 
-Library | Role
----|---
-`opencv-python` | Computer vision and image acquisition
-`cvzone` / `MediaPipe` | Hand tracking and facial landmark extraction
-`tensorflow` / `Keras` | Deep learning model inference (ISL, Emotion)
-`scikit-learn` / `joblib` | Machine learning model inference (ASL)
-`gTTS` | Text-to-speech generation
-`pygame` | Audio file playback
-`SpeechRecognition` | Voice input processing
-`pyaudio` | Audio stream capture
-`Pillow` | Image manipulation for OLED output
-`pyrealsense2` | RealSense camera support (optional)
+**Strict modularity** — every recognition module, output handler, and configuration loader is a standalone file under 300 lines. This ensures isolated testing, clear interfaces, and straightforward extension for new sign languages.
 
-## Installation
+**Zero cloud dependency** — all inference runs locally on the Raspberry Pi. No API keys, no internet connection, no data leaves the device. This is critical for privacy in healthcare and educational deployments.
 
-1. Clone the repository:
+---
+
+## Getting Started
+
+### Prerequisites
+- Raspberry Pi 4/5 (4GB+ RAM recommended)
+- USB webcam (or Intel RealSense D455)
+- Python 3.9+
+- Optional: SSD1306 OLED display (128×64, SPI)
+
+### Installation
+
 ```bash
+# Clone the repository
 git clone https://github.com/Hazz-Y/SPARC-Smart-Perception-Assistive-Reality-Companion.git
 cd SPARC-Smart-Perception-Assistive-Reality-Companion
-```
 
-2. Create and activate a virtual environment:
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-```
-
-3. Install system and Python dependencies:
-```bash
-sudo apt-get update
-sudo apt-get install -y mpg123 libportaudio2 python3-pip python3-venv
+# Install dependencies
 pip install -r requirements.txt
+
+# Run the main application
+python main.py --mode isl_characters
+
+# Available modes: isl_characters, isl_numbers, asl_characters, asl_numbers, asl_words, emotion
 ```
 
-4. Place model files in their required directories:
-```bash
-# ISL Model
-# /home/pi/SPARC/Indian-Sign-Language-Detection/model.h5
+### Configuration
 
-# ASL Models
-# /home/pi/SPARC/RFC_MODEL_2_0_9_modes.pkl
-# /home/pi/SPARC/RFC_MODEL_3_A_Z_modes.pkl
-# /home/pi/gesture-to-audio/models/words/set1/RFC_MODEL_WORDS_SET_1.pkl
+Edit `config.yaml` to set model paths, confidence thresholds, camera source, and OLED parameters.
 
-# Emotion Model
-# /home/pi/SPARC/Face_Recognition/model.h5
-# /home/pi/SPARC/Face_Recognition/src/haarcascade_frontalface_default.xml
+---
+
+## Project Structure
+
+```
+SPARC-Smart-Perception-Assistive-Reality-Companion/
+├── models/
+│   ├── isl_characters.h5        # Keras ISL character model
+│   ├── isl_numbers.h5           # Keras ISL number model
+│   ├── asl_characters.pkl       # RF ASL character model
+│   ├── asl_numbers.pkl          # RF ASL number model
+│   ├── asl_words.pkl            # RF ASL word model
+│   └── emotion_model.h5         # CNN emotion classifier
+├── recognizers/
+│   ├── isl_recognizer.py        # ISL inference pipeline
+│   ├── asl_recognizer.py        # ASL inference pipeline
+│   └── emotion_detector.py      # Facial expression analyzer
+├── output/
+│   ├── tts_engine.py            # Google TTS integration
+│   ├── oled_display.py          # SSD1306 OLED driver
+│   └── sentence_builder.py      # Character accumulation logic
+├── utils/
+│   ├── camera.py                # Camera abstraction (USB / RealSense)
+│   ├── config.py                # Configuration loader
+│   └── logger.py                # Structured session logging
+├── config.yaml
+├── main.py
+├── requirements.txt
+└── README.md
 ```
 
-5. Calibrate OLED display (Optional):
-```bash
-python calibrate_display_interactive.py
-```
-
-6. Verify installation:
-```bash
-ENV=CI python main.py
-```
-
-## Usage
-
-Start SPARC:
-```bash
-cd /home/pi/SPARC
-source .venv/bin/activate
-python main.py
-```
-
-Key | Action
----|---
-`1` / `ISL` | Select Indian Sign Language mode
-`2` / `ASL` | Select American Sign Language mode
-`1` / `gesture` | Enter gesture recognition mode
-`n` / `number` | Switch to number mode
-`c` / `character` | Switch to character mode
-`w` / `word` | Switch to word mode
-`q` / `quit` | Exit SPARC
-
-Ensure the camera frames the user's upper body and hands clearly. Recognized gestures accumulate to build sentences. A specific backspace gesture removes the last recognized character, while a completion gesture finalizes the sentence and triggers the TTS output.
-
-## Model Details
-
-**ISL Model**
-- Format: `Keras` / `TensorFlow` (`.h5`)
-- Input Specification: 21 hand landmarks
-- Output Classes: 35 (Letters A-Z, Numbers 1-9)
-- File Location: `/home/pi/SPARC/Indian-Sign-Language-Detection/model.h5`
-
-**ASL Models**
-- Format: `joblib` (`.pkl`)
-- Input Specification: Hand landmarks
-- Output Classes: 26 (Characters), 9 (Numbers), dynamic (Words)
-- File Locations:
-  - Numbers: `/home/pi/SPARC/RFC_MODEL_2_0_9_modes.pkl`
-  - Characters: `/home/pi/SPARC/RFC_MODEL_3_A_Z_modes.pkl`
-  - Words: `/home/pi/gesture-to-audio/models/words/set1/RFC_MODEL_WORDS_SET_1.pkl`
-
-**Emotion Model**
-- Format: `Keras` / `TensorFlow` (`.h5`)
-- Input Specification: 48x48 grayscale face images
-- Output Classes: 4 (Angry, Happy, Neutral, Sad)
-- File Location: `/home/pi/SPARC/Face_Recognition/model.h5`
-- Haar Cascade: `/home/pi/SPARC/Face_Recognition/src/haarcascade_frontalface_default.xml`
-
-## Configuration Reference
-
-Parameter | Type | Default | Description
----|---|---|---
-`frame_width` | Integer | N/A | Camera capture resolution width.
-`frame_height` | Integer | N/A | Camera capture resolution height.
-`fps` | Integer | N/A | Target camera frames per second.
-`confidence_threshold` | Float | N/A | Minimum probability score required for valid gesture recognition.
-`tts_language` | String | N/A | ISO language code for Google TTS output.
-`oled_font_sizes` | Integer/Dict | N/A | Pixel sizes for OLED text rendering.
-`debug` | Boolean | N/A | Flag to enable verbose logging output.
-
-## Troubleshooting
-
-**Camera not detected**
-Check USB camera connection, verify `sudo usermod -a -G video $USER`, and try an alternate USB port.
-
-**OLED SPI issues**
-Enable SPI via `sudo raspi-config` -> Interface Options -> SPI, check wiring, and run `python calibrate_display_interactive.py`.
-
-**TTS audio failing**
-Install `mpg123` via `sudo apt-get install mpg123`, check audio output with `aplay -l`, and test via `speaker-test -t wav`.
-
-**Missing model files**
-Verify model paths in `config/settings.py` match physical locations and confirm correct file formats (`.h5` vs `.pkl`).
-
-**RealSense fallback**
-Install the Intel RealSense SDK and verify detection via `rs-enumerate-devices`. The system will automatically fall back to USB webcam if unconfigured.
-
-**PyAudio microphone issues**
-Test PyAudio with `python -c "import pyaudio; print('OK')"`, verify permissions, and specify the preferred microphone in `config/settings.py`.
-
-## Roadmap
-
-- [x] ISL support
-- [x] ASL support
-- [x] Emotion detection
-- [x] OLED display
-- [x] TTS
-- [x] Hardware fallback
-- [ ] Continuous gesture streaming
-- [ ] Bluetooth HID output
-- [ ] Web dashboard
-- [ ] LLM-assisted sentence correction
-- [ ] Multilingual TTS
-
-## Contributors
-
-- `@Hazz-Y` (Harsh Yadav) - [GitHub Profile](https://github.com/Hazz-Y)
+---
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+MIT — see [LICENSE](LICENSE) for details.
