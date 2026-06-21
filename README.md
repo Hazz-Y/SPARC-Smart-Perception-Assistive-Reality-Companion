@@ -611,7 +611,7 @@ Our system demo validates the entire two-way sign language communication pipelin
 
 <div align="center">
 
-[![SPARC Demo Video](https://img.youtube.com/vi/W2UOCENfXzg/maxresdefault.jpg)](https://youtu.be/W2UOCENfXzg)
+[![SPARC Demo Video](https://img.youtube.com/vi/W2UOCENfXzg/hqdefault.jpg)](https://youtu.be/W2UOCENfXzg)
 
 *▶️ Click to watch the full system demo on YouTube*
 
