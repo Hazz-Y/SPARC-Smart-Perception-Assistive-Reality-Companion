@@ -1,11 +1,33 @@
+# Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
 .venv/
 venv/
 ENV/
 env/
+
+# IDE
 .idea/
 .vscode/
+*.swp
+*.swo
+*~
+
+# OS
 .DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.log
+*.mp3
+
+# Config overrides
+display_config.json
