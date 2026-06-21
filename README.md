@@ -43,6 +43,7 @@
 - [Model Details](#-model-details)
 - [Configuration](#%EF%B8%8F-configuration)
 - [Troubleshooting](#-troubleshooting)
+- [Demo Video](#-demo-video)
 - [Roadmap](#%EF%B8%8F-roadmap)
 - [Contributing](#-contributing)
 - [License](#-license)
@@ -601,6 +602,20 @@ python scripts/calibrate_display_interactive.py
 - Test: `python -c "import pyaudio; print('OK')"`
 - Verify permissions and check `SPARC/config/settings.py` for mic config
 </details>
+
+---
+
+## 🎬 Demo Video
+
+Our system demo validates the entire two-way sign language communication pipeline: real-time gesture acquisition, hand landmark extraction, model inference, text display on the wearable OLED, and spoken text-to-speech generation.
+
+<div align="center">
+
+[![SPARC Demo Video](https://img.youtube.com/vi/W2UOCENfXzg/maxresdefault.jpg)](https://youtu.be/W2UOCENfXzg)
+
+*▶️ Click to watch the full system demo on YouTube*
+
+</div>
 
 ---
 
